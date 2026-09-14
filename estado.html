@@ -141,6 +141,14 @@
   input.addEventListener("keydown", function (e) {
     if (e.key === "Enter") btn.click();
   });
+
+  // Si el link trae ?codigo=XS-0001 (como el del correo), lo precarga y
+  // consulta automático.
+  var params = new URLSearchParams(location.search);
+  if (params.get("codigo")) {
+    input.value = params.get("codigo");
+    btn.click();
+  }
 })();
 </script>
 </body>
