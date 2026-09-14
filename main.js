@@ -207,19 +207,68 @@
     return null;
   }
 
-  function categoriaPorPeso(categoriaEdadId, peso) {
-    var tabla = (CFG.categoriasPeso || {})[categoriaEdadId];
-    if (!tabla || !peso) return null;
+  var LB_A_KG = 0.453592;
+
+  function pesoEnKg() {
+    var pesoInput = document.getElementById("peso");
+    var unidad = document.querySelector('input[name="unidadPeso"]:checked');
+    var valor = parseFloat(pesoInput.value);
+    if (!valor) return null;
+    return unidad && unidad.value === "lb" ? valor * LB_A_KG : valor;
+  }
+
+  function sugerirUmbral(tabla, pesoKg) {
     for (var i = 0; i < tabla.length; i++) {
-      if (peso <= tabla[i]) return "Hasta " + tabla[i] + " kg";
+      if (pesoKg <= tabla[i]) return tabla[i];
     }
-    return "Más de " + tabla[tabla.length - 1] + " kg";
+    return tabla[tabla.length - 1];
+  }
+
+  var categoriaPesoTocadaManualmente = false;
+
+  function poblarCategoriaPeso(categoriaEdadId, pesoKg) {
+    var select = document.getElementById("categoria-peso");
+    var tabla = (CFG.categoriasPeso || {})[categoriaEdadId];
+
+    if (!categoriaEdadId || !tabla) {
+      select.innerHTML = '<option value="">Completa fecha de nacimiento y peso primero</option>';
+      select.disabled = true;
+      categoriaPesoTocadaManualmente = false;
+      return;
+    }
+
+    var sugerido = pesoKg ? sugerirUmbral(tabla, pesoKg) : null;
+    // Solo cuenta como "elección manual" si el usuario ya tocó el desplegable
+    // alguna vez — evita confundir el valor por defecto del navegador (la
+    // primera opción, antes de que exista una sugerencia) con una elección real.
+    var valorPrevio = categoriaPesoTocadaManualmente ? select.value : null;
+
+    select.innerHTML = "";
+    tabla.forEach(function (umbral, i) {
+      var opt = document.createElement("option");
+      var esUltimo = i === tabla.length - 1;
+      opt.value = "Hasta " + umbral + " kg";
+      opt.textContent = "Hasta " + umbral + " kg";
+      select.appendChild(opt);
+      if (esUltimo) {
+        var optMas = document.createElement("option");
+        optMas.value = "Más de " + umbral + " kg";
+        optMas.textContent = "Más de " + umbral + " kg";
+        select.appendChild(optMas);
+      }
+    });
+    select.disabled = false;
+
+    if (valorPrevio && Array.prototype.some.call(select.options, function (o) { return o.value === valorPrevio; })) {
+      select.value = valorPrevio;
+    } else if (sugerido) {
+      select.value = "Hasta " + sugerido + " kg";
+    }
   }
 
   function actualizarCategorias() {
     var nacimientoInput = document.getElementById("nacimiento");
     var edadHint = document.getElementById("edad-hint");
-    var pesoInput = document.getElementById("peso");
     var pesoHint = document.getElementById("peso-hint");
 
     var edad = nacimientoInput.value ? calcularEdad(nacimientoInput.value) : null;
@@ -233,22 +282,24 @@
       edadHint.hidden = true;
     }
 
-    var peso = parseFloat(pesoInput.value);
-    if (cat && peso) {
-      var catPeso = categoriaPorPeso(cat.id, peso);
-      pesoHint.textContent = catPeso
-        ? "Categoría de peso sugerida: " + catPeso + " — la organización confirma la definitiva en el pesaje oficial."
-        : "";
-      pesoHint.hidden = !catPeso;
-    } else {
-      pesoHint.hidden = true;
-    }
+    var pesoKg = pesoEnKg();
+    poblarCategoriaPeso(cat ? cat.id : null, pesoKg);
+    pesoHint.hidden = !(cat && pesoKg);
   }
 
   var nacimientoField = document.getElementById("nacimiento");
   var pesoField = document.getElementById("peso");
   if (nacimientoField) nacimientoField.addEventListener("change", actualizarCategorias);
   if (pesoField) pesoField.addEventListener("input", actualizarCategorias);
+  document.querySelectorAll('input[name="unidadPeso"]').forEach(function (r) {
+    r.addEventListener("change", actualizarCategorias);
+  });
+  var categoriaPesoSelect = document.getElementById("categoria-peso");
+  if (categoriaPesoSelect) {
+    categoriaPesoSelect.addEventListener("change", function () {
+      categoriaPesoTocadaManualmente = true;
+    });
+  }
 
   /* ================= Limpieza automática del WhatsApp ================= */
   function limpiarWhatsApp(raw, pais) {
@@ -310,7 +361,9 @@
     fields.forEach(function (field) {
       if (field.type === "radio") return; // handled separately
       var wrapper = field.closest(".field");
-      var ok = field.checkValidity();
+      // Un <select> disabled se considera "válido" aunque esté vacío — hay
+      // que exigir explícitamente que tenga valor antes de continuar.
+      var ok = field.disabled ? false : (field.checkValidity() && field.value !== "");
       if (wrapper) wrapper.classList.toggle("invalid", !ok);
       if (!ok) valid = false;
     });
@@ -392,12 +445,12 @@
       delete payload.pais;
     }
 
-    // Combina el peso (kg) con la categoría de peso sugerida, igual que antes
-    // se escribía a mano — así tampoco hace falta migrar el Sheet.
-    if (payload.peso) {
-      var catPeso = categoriaEdadActual ? categoriaPorPeso(categoriaEdadActual.id, parseFloat(payload.peso)) : null;
-      payload.peso = payload.peso + " kg" + (catPeso ? " — " + catPeso : "");
-    }
+    // El peso siempre se guarda en kg, sin importar en qué unidad lo haya
+    // escrito la persona (se convierte antes de enviarlo).
+    var kg = pesoEnKg();
+    if (kg) payload.peso = kg.toFixed(1);
+    delete payload.unidadPeso;
+
     if (categoriaEdadActual) {
       payload.categoriaEdad = categoriaEdadActual.id;
     }
