@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>X-Strike — Estado de tu postulación</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" href="assets/img/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .estado-shell { max-width: 560px; margin: 0 auto; padding: 140px 20px 100px; }
+  .estado-card {
+    background: var(--bg-card); border: 1px solid var(--line);
+    border-radius: 20px; padding: 32px clamp(20px, 5vw, 40px); margin-top: 28px;
+  }
+  .estado-row { display:flex; justify-content:space-between; gap:16px; padding:14px 0; border-bottom:1px solid var(--line); }
+  .estado-row:last-child { border-bottom:none; }
+  .estado-row span:first-child { color: var(--muted); font-size: 0.9rem; }
+  .estado-row span:last-child { font-weight: 600; text-align:right; }
+  .badge-estado { padding: 4px 12px; border-radius: 999px; font-size: 0.82rem; font-family: var(--font-display); letter-spacing: 0.04em; text-transform: uppercase; }
+  .badge-pendiente { background: rgba(255,176,32,0.15); color: var(--pending); }
+  .badge-revision { background: rgba(47,139,255,0.15); color: var(--blue); }
+  .badge-aceptado { background: rgba(124,250,0,0.15); color: var(--green); }
+  .badge-rechazado { background: rgba(255,107,107,0.15); color: #ff6b6b; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container">
+    <a href="index.html" style="text-decoration:none;"><img src="assets/img/logo-white.png" alt="X-Strike" class="logo-img" /></a>
+    <a href="index.html#formulario" class="btn btn-primary">Postular</a>
+  </div>
+</nav>
+
+<div class="estado-shell">
+  <span class="eyebrow">Seguimiento</span>
+  <h2 style="margin-top:14px;">Ver mi postulación</h2>
+  <p style="margin-top:12px;">Ingresa tu código de seguimiento (te lo enviamos por correo al postular) o el correo con el que te registraste.</p>
+
+  <div class="field" style="margin-top:24px;">
+    <label for="lookup-input">Código o correo electrónico</label>
+    <input type="text" id="lookup-input" placeholder="XS-0001 o tu@correo.com" />
+  </div>
+  <button type="button" class="btn btn-primary btn-block" id="lookup-btn">Consultar estado</button>
+
+  <div id="lookup-error" class="form-error" style="display:none; margin-top:14px; text-align:center;">
+    No encontramos ninguna postulación con ese dato. Verifica el código o el correo.
+  </div>
+
+  <div id="lookup-loading" style="display:none; text-align:center; margin-top:24px;">
+    <div class="spinner"></div>
+  </div>
+
+  <div class="estado-card" id="lookup-result" style="display:none;">
+    <div class="estado-row"><span>Nombre</span><span id="r-nombre"></span></div>
+    <div class="estado-row"><span>Código</span><span id="r-codigo"></span></div>
+    <div class="estado-row"><span>Estado</span><span id="r-estado"></span></div>
+    <div class="estado-row"><span>Categoría asignada</span><span id="r-categoria"></span></div>
+    <div class="estado-row"><span>Próximos pasos</span><span id="r-pasos"></span></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="local-store.js"></script>
+<script>
+(function () {
+  var CFG = window.SITE_CONFIG || {};
+  var input = document.getElementById("lookup-input");
+  var btn = document.getElementById("lookup-btn");
+  var errorEl = document.getElementById("lookup-error");
+  var loadingEl = document.getElementById("lookup-loading");
+  var resultEl = document.getElementById("lookup-result");
+
+  var BADGE_CLASS = {
+    "Pendiente": "badge-pendiente",
+    "En revisión": "badge-revision",
+    "Aceptado": "badge-aceptado",
+    "Rechazado": "badge-rechazado",
+  };
+
+  function reset() {
+    errorEl.style.display = "none";
+    resultEl.style.display = "none";
+  }
+
+  function renderResult(data) {
+    document.getElementById("r-nombre").textContent = data.nombre || "—";
+    document.getElementById("r-codigo").textContent = data.codigo || "—";
+    var badgeClass = BADGE_CLASS[data.estado] || "badge-pendiente";
+    document.getElementById("r-estado").innerHTML =
+      '<span class="badge-estado ' + badgeClass + '">' + (data.estado || "Pendiente") + "</span>";
+    document.getElementById("r-categoria").textContent = data.categoria || "Por asignar";
+    document.getElementById("r-pasos").textContent = data.proximosPasos || "Sin novedades por ahora.";
+    resultEl.style.display = "block";
+  }
+
+  var backendConfigured = CFG.APPS_SCRIPT_URL && CFG.APPS_SCRIPT_URL.indexOf("http") === 0;
+
+  btn.addEventListener("click", function () {
+    var query = input.value.trim();
+    reset();
+    if (!query) return;
+
+    // Sin backend real todavía: busca en lo guardado localmente (mismo navegador).
+    if (!backendConfigured) {
+      var local = window.XStrikeLocalStore ? window.XStrikeLocalStore.findByCodeOrEmail(query) : null;
+      if (local) {
+        renderResult({
+          nombre: local.nombre, codigo: local.codigo, estado: local.estado,
+          categoria: local.categoria, proximosPasos: local.proximosPasos,
+        });
+      } else {
+        errorEl.style.display = "block";
+      }
+      return;
+    }
+
+    loadingEl.style.display = "block";
+    var url = CFG.APPS_SCRIPT_URL + "?action=status&query=" + encodeURIComponent(query);
+
+    fetch(url)
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        loadingEl.style.display = "none";
+        if (!data || !data.ok) {
+          errorEl.style.display = "block";
+          return;
+        }
+        renderResult(data);
+      })
+      .catch(function () {
+        loadingEl.style.display = "none";
+        errorEl.style.display = "block";
+      });
+  });
+
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") btn.click();
+  });
+})();
+</script>
+</body>
+</html>

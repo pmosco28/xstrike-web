@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>X-Strike — Completa tu pago de inscripción</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" href="assets/img/favicon.png" />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .pago-shell { max-width: 560px; margin: 0 auto; padding: 140px 20px 100px; }
+  .pago-card {
+    background: var(--bg-card); border: 1px solid var(--line); border-radius: 20px;
+    padding: 32px clamp(20px, 5vw, 40px); margin-top: 24px;
+  }
+  .pago-row { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 0.95rem; }
+  .pago-row:last-child { border-bottom: none; }
+  .pago-row span:first-child { color: var(--muted); }
+  .pago-row span:last-child { font-weight: 600; text-align: right; }
+  .pago-amount { text-align: center; margin: 20px 0; }
+  .pago-amount .num { font-family: var(--font-display); font-size: 2.6rem; color: var(--green); }
+  .file-drop {
+    border: 1.5px dashed var(--line); border-radius: 12px; padding: 24px; text-align: center;
+    cursor: pointer; margin-top: 8px;
+  }
+  .file-drop.has-file { border-color: var(--green); }
+  .file-drop input { display: none; }
+  .file-preview { max-width: 100%; max-height: 220px; margin-top: 14px; border-radius: 10px; display: none; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container">
+    <a href="index.html" style="text-decoration:none;"><img src="assets/img/logo-white.png" alt="X-Strike" class="logo-img" /></a>
+  </div>
+</nav>
+
+<div class="pago-shell">
+  <span class="eyebrow">Último paso</span>
+  <h2 style="margin-top:14px;">Completa tu pago de inscripción</h2>
+  <p style="margin-top:10px;">Tu postulación fue aceptada. Para asegurar tu cupo en X-Strike, realiza la transferencia y sube tu comprobante aquí abajo.</p>
+
+  <div class="pago-card">
+    <div class="pago-amount">
+      <div class="num" id="monto-display">$30 USD</div>
+      <p style="margin-top:4px;">Monto de inscripción</p>
+    </div>
+    <div class="pago-row"><span>Banco / Cooperativa</span><span id="p-banco"></span></div>
+    <div class="pago-row"><span>Titular</span><span id="p-titular"></span></div>
+    <div class="pago-row"><span>Cédula</span><span id="p-cedula"></span></div>
+    <div class="pago-row"><span>Tipo de cuenta</span><span id="p-tipo"></span></div>
+    <div class="pago-row"><span>Número de cuenta</span><span id="p-numero"></span></div>
+  </div>
+
+  <div id="form-view">
+    <div class="field" style="margin-top:28px;">
+      <label for="codigo-input">Tu código de seguimiento</label>
+      <input type="text" id="codigo-input" placeholder="XS-0001" />
+    </div>
+    <div class="field">
+      <label for="referencia-input">Número o código de referencia de la transferencia <span class="opt">(opcional si subes la foto)</span></label>
+      <input type="text" id="referencia-input" placeholder="Ej. 000123456789" />
+    </div>
+    <div class="field">
+      <label>Foto o captura del comprobante <span class="opt">(opcional si pones la referencia)</span></label>
+      <div class="file-drop" id="file-drop">
+        <span id="file-drop-label">Toca para elegir una imagen</span>
+        <input type="file" id="file-input" accept="image/*" />
+        <img id="file-preview" class="file-preview" alt="Vista previa del comprobante" />
+      </div>
+    </div>
+
+    <button type="button" class="btn btn-primary btn-block" id="btn-submit" style="margin-top:24px;">Enviar comprobante</button>
+    <p id="pago-error" class="form-error" style="display:none; margin-top:12px; text-align:center;"></p>
+  </div>
+
+  <div id="success-view" class="form-result" hidden style="margin-top:28px;">
+    <span class="eyebrow" style="justify-content:center;">Comprobante recibido</span>
+    <h3 style="margin-top:14px;">¡Gracias! Ya estamos revisando tu pago</h3>
+    <p>Nuestro equipo confirmará tu pago pronto. Puedes revisar el estado en <a href="estado.html" style="color:var(--green);">esta página</a> cuando quieras.</p>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+(function () {
+  var CFG = window.SITE_CONFIG || {};
+  var pago = CFG.pago || {};
+
+  document.getElementById("monto-display").textContent = "$" + (pago.monto || "—") + " " + (pago.moneda || "");
+  document.getElementById("p-banco").textContent = pago.banco || "—";
+  document.getElementById("p-titular").textContent = pago.titular || "—";
+  document.getElementById("p-cedula").textContent = pago.cedula || "—";
+  document.getElementById("p-tipo").textContent = pago.tipoCuenta || "—";
+  document.getElementById("p-numero").textContent = pago.numeroCuenta || "—";
+
+  var params = new URLSearchParams(location.search);
+  var codigoInput = document.getElementById("codigo-input");
+  if (params.get("codigo")) codigoInput.value = params.get("codigo");
+
+  var fileInput = document.getElementById("file-input");
+  var fileDrop = document.getElementById("file-drop");
+  var filePreview = document.getElementById("file-preview");
+  var fileLabel = document.getElementById("file-drop-label");
+  var selectedFile = null;
+
+  fileDrop.addEventListener("click", function () { fileInput.click(); });
+  fileInput.addEventListener("change", function () {
+    var file = fileInput.files[0];
+    if (!file) return;
+    selectedFile = file;
+    fileDrop.classList.add("has-file");
+    fileLabel.textContent = file.name;
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      filePreview.src = e.target.result;
+      filePreview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        resolve(reader.result.split(",")[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.getElementById("btn-submit").addEventListener("click", function () {
+    var errorEl = document.getElementById("pago-error");
+    errorEl.style.display = "none";
+
+    var codigo = codigoInput.value.trim();
+    var referencia = document.getElementById("referencia-input").value.trim();
+
+    if (!codigo) {
+      errorEl.textContent = "Ingresa tu código de seguimiento.";
+      errorEl.style.display = "block";
+      return;
+    }
+    if (!referencia && !selectedFile) {
+      errorEl.textContent = "Ingresa la referencia de la transferencia o sube una foto del comprobante.";
+      errorEl.style.display = "block";
+      return;
+    }
+    if (!CFG.APPS_SCRIPT_URL || CFG.APPS_SCRIPT_URL.indexOf("http") !== 0) {
+      errorEl.textContent = "Falta configurar el backend todavía (APPS_SCRIPT_URL en config.js).";
+      errorEl.style.display = "block";
+      return;
+    }
+
+    var btn = document.getElementById("btn-submit");
+    btn.disabled = true;
+    btn.textContent = "Enviando...";
+
+    var payload = {
+      paymentAction: "submit",
+      codigo: codigo,
+      referencia: referencia,
+    };
+
+    var sendPromise = selectedFile
+      ? fileToBase64(selectedFile).then(function (b64) {
+          payload.comprobanteBase64 = b64;
+          payload.comprobanteNombre = selectedFile.name;
+          payload.comprobanteTipo = selectedFile.type;
+        })
+      : Promise.resolve();
+
+    sendPromise
+      .then(function () {
+        return fetch(CFG.APPS_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload),
+        });
+      })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data && data.ok) {
+          document.getElementById("form-view").hidden = true;
+          document.getElementById("success-view").hidden = false;
+        } else {
+          errorEl.textContent = (data && data.error) || "No se pudo enviar. Intenta de nuevo.";
+          errorEl.style.display = "block";
+          btn.disabled = false;
+          btn.textContent = "Enviar comprobante";
+        }
+      })
+      .catch(function () {
+        errorEl.textContent = "Error de conexión. Intenta de nuevo.";
+        errorEl.style.display = "block";
+        btn.disabled = false;
+        btn.textContent = "Enviar comprobante";
+      });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>X-Strike — Panel de revisión</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" href="assets/img/favicon.png" />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .panel-shell { max-width: 1100px; margin: 0 auto; padding: 140px 20px 100px; }
+  .panel-toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin: 24px 0 28px; }
+  .panel-toolbar input[type="text"] {
+    flex: 1; min-width: 220px; padding: 12px 16px; background: var(--bg-card);
+    border: 1px solid var(--line); border-radius: 10px; color: var(--text); font-size: 0.95rem;
+  }
+  .filter-chip {
+    padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line);
+    background: transparent; color: var(--silver); font-size: 0.85rem; cursor: pointer;
+  }
+  .filter-chip.active { border-color: var(--green); color: var(--green); background: rgba(124,250,0,0.08); }
+
+  .card {
+    background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 24px; margin-bottom: 18px;
+  }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .card-head h3 { font-family: var(--font-body); font-size: 1.15rem; text-transform: none; letter-spacing: 0; }
+  .card-code { color: var(--muted); font-size: 0.85rem; }
+  .badge-estado { padding: 5px 12px; border-radius: 999px; font-size: 0.78rem; font-family: var(--font-display); letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+  .badge-pendiente { background: rgba(255,176,32,0.15); color: var(--pending); }
+  .badge-revision { background: rgba(47,139,255,0.15); color: var(--blue); }
+  .badge-aceptado { background: rgba(124,250,0,0.15); color: var(--green); }
+  .badge-rechazado { background: rgba(255,107,107,0.15); color: #ff6b6b; }
+
+  .pago-block { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 16px; margin-bottom: 16px; }
+  .pago-block-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+  .pago-block-head strong { font-size: 0.9rem; }
+  .pago-badge-nopendiente { background: rgba(255,176,32,0.15); color: var(--pending); }
+  .pago-badge-reportado { background: rgba(47,139,255,0.15); color: var(--blue); }
+  .pago-badge-confirmado { background: rgba(124,250,0,0.15); color: var(--green); }
+  .pago-badge-noaplica { background: rgba(118,124,136,0.15); color: var(--muted); }
+
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-bottom: 16px; font-size: 0.92rem; }
+  @media (max-width: 640px) { .card-grid { grid-template-columns: 1fr; } }
+  .card-grid .row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+  .card-grid .row span:first-child { color: var(--muted); }
+  .card-grid .row span:last-child { text-align: right; max-width: 60%; }
+  .card-links { display: flex; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+  .card-links a { color: var(--blue); font-size: 0.88rem; text-decoration: none; }
+  .card-links a:hover { text-decoration: underline; }
+
+  .status-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .status-btn {
+    padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line);
+    background: transparent; color: var(--silver); font-size: 0.82rem; cursor: pointer;
+    font-family: var(--font-body);
+  }
+  .status-btn.active.st-pendiente { border-color: var(--pending); color: var(--pending); background: rgba(255,176,32,0.1); }
+  .status-btn.active.st-revision { border-color: var(--blue); color: var(--blue); background: rgba(47,139,255,0.1); }
+  .status-btn.active.st-aceptado { border-color: var(--green); color: var(--green); background: rgba(124,250,0,0.1); }
+  .status-btn.active.st-rechazado { border-color: #ff6b6b; color: #ff6b6b; background: rgba(255,107,107,0.1); }
+
+  .card .field { margin-bottom: 12px; }
+  .card .field label { font-size: 0.8rem; }
+  .card-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+  .notify-check { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--silver); }
+  .notify-check input { accent-color: var(--green); }
+  .card-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .save-note { font-size: 0.8rem; color: var(--green); margin-left: 10px; opacity: 0; transition: opacity 0.3s ease; }
+  .save-note.show { opacity: 1; }
+
+  .gate-shell { max-width: 420px; margin: 160px auto; text-align: center; }
+  .gate-shell input { width: 100%; margin: 20px 0; padding: 14px 16px; background: var(--bg-card); border: 1px solid var(--line); border-radius: 10px; color: var(--text); }
+
+  .count-line { color: var(--muted); font-size: 0.9rem; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container">
+    <a href="index.html" style="text-decoration:none;"><img src="assets/img/logo-white.png" alt="X-Strike" class="logo-img" /></a>
+    <button type="button" class="btn btn-ghost" id="btn-logout" style="display:none;">Salir</button>
+  </div>
+</nav>
+
+<!-- Pantalla de acceso -->
+<div class="gate-shell" id="gate-shell">
+  <span class="eyebrow" style="justify-content:center;">Panel de revisión</span>
+  <h2 style="margin-top:14px;">Acceso del equipo</h2>
+  <p style="margin-top:10px;">Ingresa la clave del panel (la misma configurada en Code.gs como ADMIN_TOKEN).</p>
+  <input type="password" id="token-input" placeholder="Clave del panel" />
+  <button type="button" class="btn btn-primary btn-block" id="btn-enter">Entrar</button>
+  <p id="gate-error" class="pending" style="display:none; margin-top:14px;">Clave incorrecta o backend no configurado.</p>
+</div>
+
+<!-- Panel -->
+<div class="panel-shell" id="panel-shell" hidden>
+  <span class="eyebrow">Panel de revisión</span>
+  <h2 style="margin-top:14px;">Postulaciones</h2>
+  <p class="count-line" id="count-line"></p>
+
+  <div class="panel-toolbar">
+    <input type="text" id="search-input" placeholder="Buscar por nombre, academia, código..." />
+    <button type="button" class="filter-chip active" data-filter="Todos">Todos</button>
+    <button type="button" class="filter-chip" data-filter="Pendiente">Pendiente</button>
+    <button type="button" class="filter-chip" data-filter="En revisión">En revisión</button>
+    <button type="button" class="filter-chip" data-filter="Aceptado">Aceptado</button>
+    <button type="button" class="filter-chip" data-filter="Rechazado">Rechazado</button>
+    <button type="button" class="btn btn-ghost" id="btn-refresh">Actualizar</button>
+  </div>
+
+  <div id="cards-wrap"></div>
+  <div id="empty-state" class="empty-state" style="text-align:center; color:var(--muted); padding:60px 0;" hidden>
+    No hay postulaciones que coincidan con este filtro.
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+(function () {
+  var CFG = window.SITE_CONFIG || {};
+  var TOKEN_KEY = "xstrike_admin_token";
+  var BADGE_CLASS = {
+    "Pendiente": "badge-pendiente", "En revisión": "badge-revision",
+    "Aceptado": "badge-aceptado", "Rechazado": "badge-rechazado",
+  };
+  var STATUSES = ["Pendiente", "En revisión", "Aceptado", "Rechazado"];
+  var STATUS_CLASS = {
+    "Pendiente": "st-pendiente", "En revisión": "st-revision",
+    "Aceptado": "st-aceptado", "Rechazado": "st-rechazado",
+  };
+  var PAGO_ESTADOS = ["Pendiente", "Reportado", "Confirmado"];
+  var PAGO_BADGE_CLASS = {
+    "Pendiente": "pago-badge-nopendiente", "Reportado": "pago-badge-reportado",
+    "Confirmado": "pago-badge-confirmado", "No aplica": "pago-badge-noaplica",
+  };
+
+  var allData = [];
+  var currentFilter = "Todos";
+  var currentSearch = "";
+
+  var gateShell = document.getElementById("gate-shell");
+  var panelShell = document.getElementById("panel-shell");
+  var tokenInput = document.getElementById("token-input");
+  var gateError = document.getElementById("gate-error");
+
+  function backendConfigured() {
+    return CFG.APPS_SCRIPT_URL && CFG.APPS_SCRIPT_URL.indexOf("http") === 0;
+  }
+
+  function apiGet(params) {
+    var url = CFG.APPS_SCRIPT_URL + "?" + params;
+    return fetch(url).then(function (r) { return r.json(); });
+  }
+
+  function apiPost(payload) {
+    return fetch(CFG.APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+    }).then(function (r) { return r.json(); });
+  }
+
+  function enterPanel(token) {
+    if (!backendConfigured()) {
+      gateError.textContent = "Falta configurar APPS_SCRIPT_URL en config.js.";
+      gateError.style.display = "block";
+      return;
+    }
+    apiGet("action=list&token=" + encodeURIComponent(token)).then(function (data) {
+      if (!data || !data.ok) {
+        gateError.textContent = "Clave incorrecta.";
+        gateError.style.display = "block";
+        return;
+      }
+      localStorage.setItem(TOKEN_KEY, token);
+      gateShell.hidden = true;
+      panelShell.hidden = false;
+      document.getElementById("btn-logout").style.display = "inline-flex";
+      allData = data.postulaciones;
+      render();
+    }).catch(function () {
+      gateError.textContent = "No se pudo conectar con el backend.";
+      gateError.style.display = "block";
+    });
+  }
+
+  document.getElementById("btn-enter").addEventListener("click", function () {
+    enterPanel(tokenInput.value.trim());
+  });
+  tokenInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") document.getElementById("btn-enter").click();
+  });
+
+  document.getElementById("btn-logout").addEventListener("click", function () {
+    localStorage.removeItem(TOKEN_KEY);
+    location.reload();
+  });
+
+  document.getElementById("btn-refresh").addEventListener("click", function () {
+    var token = localStorage.getItem(TOKEN_KEY);
+    apiGet("action=list&token=" + encodeURIComponent(token)).then(function (data) {
+      if (data && data.ok) { allData = data.postulaciones; render(); }
+    });
+  });
+
+  document.getElementById("search-input").addEventListener("input", function (e) {
+    currentSearch = e.target.value.trim().toLowerCase();
+    render();
+  });
+
+  document.querySelectorAll(".filter-chip").forEach(function (chip) {
+    chip.addEventListener("click", function () {
+      document.querySelectorAll(".filter-chip").forEach(function (c) { c.classList.remove("active"); });
+      chip.classList.add("active");
+      currentFilter = chip.dataset.filter;
+      render();
+    });
+  });
+
+  function waLink(row) {
+    var phone = String(row["WhatsApp"] || "").replace(/[^0-9+]/g, "");
+    var msg = "Hola " + row["Nombre completo"] + ", te escribimos de X-Strike sobre tu postulación (" + row["Código"] + ").";
+    return "https://wa.me/" + phone.replace("+", "") + "?text=" + encodeURIComponent(msg);
+  }
+
+  function matches(row) {
+    if (currentFilter !== "Todos" && (row["Estado"] || "Pendiente") !== currentFilter) return false;
+    if (!currentSearch) return true;
+    var haystack = [row["Nombre completo"], row["Academia o equipo"], row["Código"], row["Disciplina principal"]]
+      .join(" ").toLowerCase();
+    return haystack.indexOf(currentSearch) !== -1;
+  }
+
+  function render() {
+    var wrap = document.getElementById("cards-wrap");
+    wrap.innerHTML = "";
+    var filtered = allData.filter(matches);
+    document.getElementById("count-line").textContent =
+      allData.length + " postulaciones totales · mostrando " + filtered.length;
+    document.getElementById("empty-state").hidden = filtered.length > 0;
+
+    filtered.forEach(function (row) {
+      wrap.appendChild(buildCard(row));
+    });
+  }
+
+  function buildCard(row) {
+    var estado = row["Estado"] || "Pendiente";
+    var card = document.createElement("div");
+    card.className = "card";
+
+    var badgeClass = BADGE_CLASS[estado] || "badge-pendiente";
+    card.innerHTML =
+      '<div class="card-head">' +
+        '<div><h3>' + escapeHtml(row["Nombre completo"]) + '</h3><span class="card-code">' + escapeHtml(row["Código"]) + " · " + escapeHtml(row["Ciudad y país"] || "") + '</span></div>' +
+        '<span class="badge-estado ' + badgeClass + '">' + escapeHtml(estado) + '</span>' +
+      '</div>' +
+      '<div class="card-grid">' +
+        row1("Género / edad", (row["Género"] || "—") + " / " + (row["Categoría de edad"] || "—")) +
+        row1("Academia / coach", (row["Academia o equipo"] || "—") + " / " + (row["Coach"] || "—")) +
+        row1("Disciplina", row["Disciplina principal"] || "—") +
+        row1("Peso / categoría", row["Peso y categoría"] || "—") +
+        row1("Años entrenando", row["Años de entrenamiento"] || "—") +
+        row1("Disponibilidad 31 oct", row["Disponibilidad 31 oct"] || "—") +
+        row1("Correo", row["Correo"] || "—") +
+        row1("WhatsApp", row["WhatsApp"] || "—") +
+        row1("Récord", row["Récord"] || "—") +
+      '</div>' +
+      '<p style="font-size:0.9rem; color:var(--silver); margin-bottom:14px;">' + escapeHtml(row["Experiencia competitiva"] || "") + '</p>' +
+      '<div class="card-links">' +
+        (row["Instagram"] ? '<a href="https://instagram.com/' + encodeURIComponent(String(row["Instagram"]).replace("@","")) + '" target="_blank" rel="noopener">Instagram</a>' : "") +
+        (row["Video / highlights"] ? '<a href="' + escapeAttr(row["Video / highlights"]) + '" target="_blank" rel="noopener">Ver highlights</a>' : "") +
+        (row["WhatsApp"] ? '<a href="' + waLink(row) + '" target="_blank" rel="noopener">Escribir por WhatsApp</a>' : "") +
+      '</div>' +
+      '<div class="status-row" data-role="status-row"></div>' +
+      (estado === "Aceptado" ? buildPagoBlock(row) : "") +
+      '<div class="field"><label>Categoría asignada</label><input type="text" class="cat-input" value="' + escapeAttr(row["Categoría asignada"] || "") + '" /></div>' +
+      '<div class="field"><label>Próximos pasos / mensaje al peleador</label><textarea class="pasos-input" rows="2">' + escapeHtml(row["Próximos pasos"] || "") + '</textarea></div>' +
+      '<div class="card-footer">' +
+        '<label class="notify-check"><input type="checkbox" class="notify-input" checked /> Avisar por correo al peleador</label>' +
+        '<div class="card-actions"><button type="button" class="btn btn-primary btn-save">Guardar cambios</button><span class="save-note">Guardado ✓</span></div>' +
+      '</div>';
+
+    var statusRow = card.querySelector('[data-role="status-row"]');
+    var selectedStatus = estado;
+    STATUSES.forEach(function (s) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "status-btn " + STATUS_CLASS[s] + (s === selectedStatus ? " active" : "");
+      btn.textContent = s;
+      btn.addEventListener("click", function () {
+        selectedStatus = s;
+        statusRow.querySelectorAll(".status-btn").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+      });
+      statusRow.appendChild(btn);
+    });
+
+    var selectedPago = row["Pago"] || "No aplica";
+    var pagoRow = card.querySelector('[data-role="pago-row"]');
+    if (pagoRow) {
+      PAGO_ESTADOS.forEach(function (p) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "status-btn " + (p === selectedPago ? "active" : "");
+        btn.textContent = p;
+        btn.addEventListener("click", function () {
+          selectedPago = p;
+          pagoRow.querySelectorAll(".status-btn").forEach(function (b) { b.classList.remove("active"); });
+          btn.classList.add("active");
+        });
+        pagoRow.appendChild(btn);
+      });
+    }
+
+    card.querySelector(".btn-save").addEventListener("click", function () {
+      var token = localStorage.getItem(TOKEN_KEY);
+      var categoria = card.querySelector(".cat-input").value;
+      var proximosPasos = card.querySelector(".pasos-input").value;
+      var notify = card.querySelector(".notify-input").checked;
+      apiPost({
+        adminAction: "update",
+        token: token,
+        codigo: row["Código"],
+        estado: selectedStatus,
+        categoria: categoria,
+        proximosPasos: proximosPasos,
+        pago: pagoRow ? selectedPago : undefined,
+        notify: notify,
+      }).then(function (res) {
+        if (res && res.ok) {
+          row["Estado"] = selectedStatus;
+          row["Categoría asignada"] = categoria;
+          row["Próximos pasos"] = proximosPasos;
+          if (pagoRow) row["Pago"] = selectedPago;
+          var note = card.querySelector(".save-note");
+          note.classList.add("show");
+          setTimeout(function () { note.classList.remove("show"); }, 2000);
+          var badge = card.querySelector(".card-head .badge-estado");
+          badge.className = "badge-estado " + (BADGE_CLASS[selectedStatus] || "badge-pendiente");
+          badge.textContent = selectedStatus;
+          var pagoBadge = card.querySelector(".pago-block .badge-estado");
+          if (pagoBadge) {
+            pagoBadge.className = "badge-estado " + (PAGO_BADGE_CLASS[selectedPago] || "pago-badge-nopendiente");
+            pagoBadge.textContent = selectedPago;
+          }
+          // Si acaba de pasar a Aceptado, el bloque de pago aún no existe en el DOM
+          // hasta refrescar — se le avisa al usuario para que actualice la lista.
+        } else {
+          alert("No se pudo guardar. Intenta de nuevo.");
+        }
+      });
+    });
+
+    return card;
+  }
+
+  function buildPagoBlock(row) {
+    var pago = row["Pago"] || "Pendiente";
+    var badgeClass = PAGO_BADGE_CLASS[pago] || "pago-badge-nopendiente";
+    var comprobante = row["Comprobante (Drive)"];
+    var referencia = row["Referencia de pago"];
+    return (
+      '<div class="pago-block">' +
+        '<div class="pago-block-head">' +
+          '<strong>Pago de inscripción</strong>' +
+          '<span class="badge-estado ' + badgeClass + '">' + escapeHtml(pago) + '</span>' +
+        '</div>' +
+        (referencia ? '<p style="font-size:0.88rem; color:var(--silver); margin-bottom:6px;">Referencia: ' + escapeHtml(referencia) + '</p>' : '') +
+        (comprobante ? '<p style="margin-bottom:10px;"><a href="' + escapeAttr(comprobante) + '" target="_blank" rel="noopener" style="color:var(--blue); font-size:0.88rem;">Ver comprobante subido</a></p>' : '<p style="font-size:0.85rem; color:var(--muted); margin-bottom:10px;">Todavía no ha subido comprobante.</p>') +
+        '<div class="status-row" data-role="pago-row"></div>' +
+      '</div>'
+    );
+  }
+
+  function row1(label, value) {
+    return '<div class="row"><span>' + escapeHtml(label) + '</span><span>' + escapeHtml(String(value)) + '</span></div>';
+  }
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function escapeAttr(s) { return escapeHtml(s); }
+
+  // Auto-entrar si ya hay token guardado en este navegador.
+  var saved = localStorage.getItem(TOKEN_KEY);
+  if (saved) {
+    tokenInput.value = saved;
+    enterPanel(saved);
+  }
+})();
+</script>
+</body>
+</html>

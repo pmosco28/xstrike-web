@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>X-Strike — Postulaciones locales (modo de prueba)</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" href="assets/img/favicon.png" />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .admin-shell { max-width: 1200px; margin: 0 auto; padding: 140px 20px 100px; }
+  .admin-warning {
+    background: rgba(255,176,32,0.1); border: 1px solid var(--pending);
+    color: var(--pending); border-radius: 12px; padding: 16px 20px;
+    font-size: 0.92rem; margin: 20px 0 32px; line-height: 1.5;
+  }
+  .admin-actions { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; min-width: 1400px; font-size: 0.86rem; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { background: var(--bg-card); color: var(--silver); font-weight: 600; position: sticky; top: 0; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  td.editable { cursor: text; }
+  td.editable:focus { outline: 2px solid var(--green); outline-offset: -2px; background: rgba(124,250,0,0.05); }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .count-badge { color: var(--muted); font-size: 0.9rem; margin-left: 10px; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container">
+    <a href="index.html" style="text-decoration:none;"><img src="assets/img/logo-white.png" alt="X-Strike" class="logo-img" /></a>
+    <a href="index.html#formulario" class="btn btn-primary">Postular</a>
+  </div>
+</nav>
+
+<div class="admin-shell">
+  <span class="eyebrow">Modo de prueba</span>
+  <h2 style="margin-top:14px;">Postulaciones guardadas en este navegador<span class="count-badge" id="count-badge"></span></h2>
+
+  <div class="admin-warning">
+    Esto NO es la base de datos real — solo muestra lo que se guardó en <em>este mismo navegador</em>,
+    en este mismo dispositivo. Cada persona que llena el formulario desde su propio celular guarda sus
+    datos únicamente en su propio celular; esta tabla nunca los va a mostrar aquí. Es solo para probar
+    el flujo mientras se conecta el backend real (Google Sheets vía Apps Script — ver
+    <code>apps-script/README.md</code>). Apenas <code>config.js</code> tenga <code>APPS_SCRIPT_URL</code>
+    configurada, el formulario deja de usar este modo local automáticamente.
+  </div>
+
+  <div class="admin-actions">
+    <button type="button" class="btn btn-ghost" id="btn-csv">Descargar CSV</button>
+    <button type="button" class="btn btn-ghost" id="btn-clear">Borrar todo lo local</button>
+  </div>
+
+  <div id="empty-state" class="empty-state" hidden>
+    Todavía no hay ninguna postulación guardada en este navegador.
+    <br /><a href="index.html#formulario" style="color:var(--green);">Ir al formulario</a>
+  </div>
+
+  <div class="table-wrap" id="table-wrap">
+    <table id="table">
+      <thead><tr id="thead-row"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="local-store.js"></script>
+<script>
+(function () {
+  var store = window.XStrikeLocalStore;
+  var EDITABLE = ["estado", "categoria", "proximosPasos"];
+
+  function render() {
+    var rows = store.all();
+    document.getElementById("count-badge").textContent =
+      rows.length ? "(" + rows.length + ")" : "";
+
+    document.getElementById("empty-state").hidden = rows.length > 0;
+    document.getElementById("table-wrap").hidden = rows.length === 0;
+
+    var theadRow = document.getElementById("thead-row");
+    theadRow.innerHTML = "";
+    store.COLUMNS.forEach(function (col) {
+      var th = document.createElement("th");
+      th.textContent = col.label;
+      theadRow.appendChild(th);
+    });
+
+    var tbody = document.getElementById("tbody");
+    tbody.innerHTML = "";
+    rows.forEach(function (row, rowIndex) {
+      var tr = document.createElement("tr");
+      store.COLUMNS.forEach(function (col) {
+        var td = document.createElement("td");
+        var value = row[col.key] || "";
+        if (col.key === "timestamp" && value) {
+          value = new Date(value).toLocaleString("es-EC");
+        }
+        td.textContent = value;
+        if (EDITABLE.indexOf(col.key) !== -1) {
+          td.classList.add("editable");
+          td.contentEditable = "true";
+          td.addEventListener("blur", function () {
+            var allRows = store.all();
+            allRows[rowIndex][col.key] = td.textContent.trim();
+            localStorage.setItem(
+              "xstrike_local_postulaciones",
+              JSON.stringify(allRows)
+            );
+          });
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById("btn-csv").addEventListener("click", function () {
+    var csv = store.toCSV();
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "x-strike-postulaciones-local.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById("btn-clear").addEventListener("click", function () {
+    if (confirm("¿Borrar todas las postulaciones guardadas en este navegador? No se puede deshacer.")) {
+      store.clear();
+      render();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
