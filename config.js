@@ -6,7 +6,7 @@
 window.SITE_CONFIG = {
   // URL del Web App de Google Apps Script (ver apps-script/README.md para desplegarlo).
   // Debe terminar en /exec
-  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbywm1zrBexeFAafqiSzYwcIF-NqvAX_zPhTlX3SJ56JkUpTv4IKluew9__mATxmL9kp/exec",
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzTp4MSVHjkYjgjwGNA7gQQK1RuOaXF6bF2jZejoGRMaToN5b_fZQoSFHpBb0sENi3Q/exec",
 
   event: {
     fecha: "31 de octubre de 2026",
