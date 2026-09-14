@@ -52,9 +52,8 @@ window.SITE_CONFIG = {
     numeroCuenta: "406135135905",
   },
 
-  // Categorías por edad. Tomadas del formulario anterior del equipo —
-  // confirma con la organización antes de publicar, sobre todo para
-  // Kickboxing si maneja rangos distintos a Muay Thai.
+  // Categorías por edad — confirmadas por la organización (las mismas del
+  // formulario anterior del equipo, válidas también para Kickboxing).
   categoriasEdad: [
     { id: "Infantil C", min: 5, max: 6 },
     { id: "Infantil B", min: 7, max: 8 },
@@ -65,10 +64,9 @@ window.SITE_CONFIG = {
     { id: "Mayores de edad", min: 18, max: 120 },
   ],
 
-  // Categorías de peso (en kg) por grupo de edad. Cada lista es el techo de
-  // cada categoría (ej. en Junior, 52 significa "hasta 52 kg"). Tomadas del
-  // formulario anterior — PENDIENTE de confirmar oficialmente, y de definir
-  // si Kickboxing y las categorías femeninas usan los mismos rangos.
+  // Categorías de peso (en kg) por grupo de edad — confirmadas por la
+  // organización. Cada lista es el techo de cada categoría (ej. en Junior,
+  // 52 significa "hasta 52 kg").
   categoriasPeso: {
     "Infantil C": [25, 30, 35, 40, 42, 45, 47, 50],
     "Infantil B": [25, 30, 35, 40, 42, 45, 47, 50],
