@@ -17,7 +17,7 @@ window.SITE_CONFIG = {
   },
 
   contacto: {
-    instagram: null,      // ej: "https://instagram.com/xstrike.ec"
+    instagram: "https://www.instagram.com/xstrike.ec",
     whatsapp: null,       // ej: "https://wa.me/593999999999"
     correo: null,         // ej: "postulaciones@xstrike.ec"
   },
