@@ -278,7 +278,8 @@
       '</div>' +
       '<div class="status-row" data-role="status-row"></div>' +
       (estado === "Aceptado" ? buildPagoBlock(row) : "") +
-      '<div class="field"><label>Categoría asignada</label><input type="text" class="cat-input" value="' + escapeAttr(row["Categoría asignada"] || "") + '" /></div>' +
+      '<div class="field"><label>Categoría (calculada automáticamente, no se edita a mano)</label>' +
+      '<input type="text" class="cat-input" value="' + escapeAttr(categoriaCompleta(row)) + '" readonly /></div>' +
       '<div class="field"><label>Próximos pasos / mensaje al peleador</label><textarea class="pasos-input" rows="2">' + escapeHtml(row["Próximos pasos"] || "") + '</textarea></div>' +
       '<div class="card-footer">' +
         '<label class="notify-check"><input type="checkbox" class="notify-input" checked /> Avisar por correo al peleador</label>' +
@@ -375,6 +376,13 @@
         '<div class="status-row" data-role="pago-row"></div>' +
       '</div>'
     );
+  }
+
+  function categoriaCompleta(row) {
+    var edad = row["Categoría de edad"];
+    var peso = row["Categoría de peso"];
+    if (!edad && !peso) return "Sin datos suficientes (falta fecha de nacimiento o peso)";
+    return [edad, peso].filter(Boolean).join(" — ");
   }
 
   function row1(label, value) {

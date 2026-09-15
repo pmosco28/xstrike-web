@@ -27,16 +27,10 @@ window.SITE_CONFIG = {
     metaPixelId: null,       // ej: "1234567890123" — null = no instalar todavía
   },
 
-  // Opciones del selector "Disciplina principal" en el formulario.
-  // Muay Thai y Kickboxing están confirmadas. Las demás quedan como referencia
-  // por si se habilitan más adelante — confirma con la organización.
+  // Disciplinas habilitadas para X-Strike — solo estas dos, confirmado.
   disciplinas: [
     "Muay Thai",
     "Kickboxing",
-    "MMA",
-    "Boxeo",
-    "Grappling / BJJ",
-    "Otra",
   ],
 
   // Datos de pago de inscripción — solo se piden DESPUÉS de aceptar a un peleador
