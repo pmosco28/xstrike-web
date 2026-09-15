@@ -31,6 +31,7 @@
     flex-wrap: wrap; cursor: pointer; list-style: none; padding: 8px 0;
   }
   .card-head::-webkit-details-marker { display: none; }
+  .card-head-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .card-head::before {
     content: "▸"; color: var(--muted); font-size: 0.9rem; margin-right: 10px;
     transition: transform 0.15s ease; display: inline-block;
@@ -312,7 +313,11 @@
     card.innerHTML =
       '<summary class="card-head">' +
         '<div><h3>' + escapeHtml(row["Nombre completo"]) + '</h3><span class="card-code">' + escapeHtml(row["Código"]) + " · " + (row["Disciplina principal"] || "—") + '</span></div>' +
-        '<span class="badge-estado ' + badgeClass + '">' + escapeHtml(estado) + '</span>' +
+        '<div class="card-head-badges">' +
+        '<span class="badge-estado pago-badge-reportado" data-role="pago-alerta" title="Subió comprobante de pago — falta confirmarlo"' +
+          (row["Pago"] === "Reportado" ? "" : " hidden") + '>🧾 Pago por revisar</span>' +
+        '<span class="badge-estado estado-badge-main ' + badgeClass + '">' + escapeHtml(estado) + '</span>' +
+        '</div>' +
       '</summary>' +
       '<div class="card-body">' +
       '<div class="card-grid">' +
@@ -403,14 +408,16 @@
           var note = card.querySelector(".save-note");
           note.classList.add("show");
           setTimeout(function () { note.classList.remove("show"); }, 2000);
-          var badge = card.querySelector(".card-head .badge-estado");
-          badge.className = "badge-estado " + (BADGE_CLASS[selectedStatus] || "badge-pendiente");
+          var badge = card.querySelector(".estado-badge-main");
+          badge.className = "badge-estado estado-badge-main " + (BADGE_CLASS[selectedStatus] || "badge-pendiente");
           badge.textContent = selectedStatus;
           var pagoBadge = card.querySelector(".pago-block .badge-estado");
           if (pagoBadge) {
             pagoBadge.className = "badge-estado " + (PAGO_BADGE_CLASS[selectedPago] || "pago-badge-nopendiente");
             pagoBadge.textContent = selectedPago;
           }
+          var pagoAlerta = card.querySelector('[data-role="pago-alerta"]');
+          if (pagoAlerta) pagoAlerta.hidden = selectedPago !== "Reportado";
           // Si acaba de pasar a Aceptado, el bloque de pago aún no existe en el DOM
           // hasta refrescar — se le avisa al usuario para que actualice la lista.
         } else {
