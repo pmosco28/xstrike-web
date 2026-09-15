@@ -23,9 +23,21 @@
 
   .card {
     background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px;
-    padding: 24px; margin-bottom: 18px;
+    padding: 16px 24px; margin-bottom: 12px;
   }
-  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .card[open] { padding-bottom: 24px; }
+  .card-head {
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    flex-wrap: wrap; cursor: pointer; list-style: none; padding: 8px 0;
+  }
+  .card-head::-webkit-details-marker { display: none; }
+  .card-head::before {
+    content: "▸"; color: var(--muted); font-size: 0.9rem; margin-right: 10px;
+    transition: transform 0.15s ease; display: inline-block;
+  }
+  .card[open] .card-head::before { transform: rotate(90deg); }
+  .card-head h3 { display: inline; }
+  .card-body { padding-top: 16px; border-top: 1px solid var(--line); margin-top: 4px; }
   .card-head h3 { font-family: var(--font-body); font-size: 1.15rem; text-transform: none; letter-spacing: 0; }
   .card-code { color: var(--muted); font-size: 0.85rem; }
   .badge-estado { padding: 5px 12px; border-radius: 999px; font-size: 0.78rem; font-family: var(--font-display); letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
@@ -105,12 +117,12 @@
   <span class="eyebrow">Panel de revisión</span>
   <h2 style="margin-top:14px;">Postulaciones</h2>
   <p class="count-line" id="count-line"></p>
+  <p class="count-line" id="last-updated" style="font-size:0.8rem;"></p>
 
   <div class="panel-toolbar">
     <input type="text" id="search-input" placeholder="Buscar por nombre, academia, código..." />
     <button type="button" class="filter-chip active" data-filter="Todos">Todos</button>
     <button type="button" class="filter-chip" data-filter="Pendiente">Pendiente</button>
-    <button type="button" class="filter-chip" data-filter="En revisión">En revisión</button>
     <button type="button" class="filter-chip" data-filter="Aceptado">Aceptado</button>
     <button type="button" class="filter-chip" data-filter="Rechazado">Rechazado</button>
     <button type="button" class="btn btn-ghost" id="btn-refresh">Actualizar</button>
@@ -128,18 +140,17 @@
   var CFG = window.SITE_CONFIG || {};
   var TOKEN_KEY = "xstrike_admin_token";
   var BADGE_CLASS = {
-    "Pendiente": "badge-pendiente", "En revisión": "badge-revision",
+    "Pendiente": "badge-pendiente",
     "Aceptado": "badge-aceptado", "Rechazado": "badge-rechazado",
   };
-  var STATUSES = ["Pendiente", "En revisión", "Aceptado", "Rechazado"];
+  var STATUSES = ["Pendiente", "Aceptado", "Rechazado"];
   var MENSAJE_PREVIEW = {
     "Pendiente": "No se envía ningún correo en este estado.",
-    "En revisión": "Correo pidiéndole al peleador información adicional para continuar el proceso.",
     "Aceptado": "Correo confirmando la aceptación, con su categoría, los datos bancarios y el link para subir el comprobante de pago.",
     "Rechazado": "Correo agradeciendo su postulación e informando que no continúa en el proceso.",
   };
   var STATUS_CLASS = {
-    "Pendiente": "st-pendiente", "En revisión": "st-revision",
+    "Pendiente": "st-pendiente",
     "Aceptado": "st-aceptado", "Rechazado": "st-rechazado",
   };
   var PAGO_ESTADOS = ["Pendiente", "Reportado", "Confirmado"];
@@ -174,6 +185,31 @@
     }).then(function (r) { return r.json(); });
   }
 
+  function marcarActualizado() {
+    var ahora = new Date();
+    document.getElementById("last-updated").textContent =
+      "Actualizado a las " + ahora.toLocaleTimeString("es-EC");
+  }
+
+  function refreshData(silencioso) {
+    var token = localStorage.getItem(TOKEN_KEY);
+    return apiGet("action=list&token=" + encodeURIComponent(token)).then(function (data) {
+      if (data && data.ok) {
+        allData = data.postulaciones;
+        render();
+        marcarActualizado();
+      } else if (!silencioso) {
+        alert("No se pudo actualizar. Intenta de nuevo.");
+      }
+    });
+  }
+
+  var autoRefreshTimer = null;
+  function iniciarAutoRefresh() {
+    if (autoRefreshTimer) return;
+    autoRefreshTimer = setInterval(function () { refreshData(true); }, 30000);
+  }
+
   function enterPanel(token) {
     if (!backendConfigured()) {
       gateError.textContent = "Falta configurar APPS_SCRIPT_URL en config.js.";
@@ -192,6 +228,8 @@
       document.getElementById("btn-logout").style.display = "inline-flex";
       allData = data.postulaciones;
       render();
+      marcarActualizado();
+      iniciarAutoRefresh();
     }).catch(function () {
       gateError.textContent = "No se pudo conectar con el backend.";
       gateError.style.display = "block";
@@ -211,10 +249,7 @@
   });
 
   document.getElementById("btn-refresh").addEventListener("click", function () {
-    var token = localStorage.getItem(TOKEN_KEY);
-    apiGet("action=list&token=" + encodeURIComponent(token)).then(function (data) {
-      if (data && data.ok) { allData = data.postulaciones; render(); }
-    });
+    refreshData(false);
   });
 
   document.getElementById("search-input").addEventListener("input", function (e) {
@@ -247,6 +282,13 @@
 
   function render() {
     var wrap = document.getElementById("cards-wrap");
+    // Recuerda qué tarjetas estaban abiertas para no cerrarlas de golpe en
+    // cada auto-refresco.
+    var abiertas = {};
+    wrap.querySelectorAll(".card[open]").forEach(function (el) {
+      abiertas[el.dataset.codigo] = true;
+    });
+
     wrap.innerHTML = "";
     var filtered = allData.filter(matches);
     document.getElementById("count-line").textContent =
@@ -254,21 +296,25 @@
     document.getElementById("empty-state").hidden = filtered.length > 0;
 
     filtered.forEach(function (row) {
-      wrap.appendChild(buildCard(row));
+      var cardEl = buildCard(row);
+      if (abiertas[row["Código"]]) cardEl.open = true;
+      wrap.appendChild(cardEl);
     });
   }
 
   function buildCard(row) {
     var estado = row["Estado"] || "Pendiente";
-    var card = document.createElement("div");
+    var card = document.createElement("details");
     card.className = "card";
+    card.dataset.codigo = row["Código"];
 
     var badgeClass = BADGE_CLASS[estado] || "badge-pendiente";
     card.innerHTML =
-      '<div class="card-head">' +
-        '<div><h3>' + escapeHtml(row["Nombre completo"]) + '</h3><span class="card-code">' + escapeHtml(row["Código"]) + " · " + escapeHtml(row["Ciudad y país"] || "") + '</span></div>' +
+      '<summary class="card-head">' +
+        '<div><h3>' + escapeHtml(row["Nombre completo"]) + '</h3><span class="card-code">' + escapeHtml(row["Código"]) + " · " + (row["Disciplina principal"] || "—") + '</span></div>' +
         '<span class="badge-estado ' + badgeClass + '">' + escapeHtml(estado) + '</span>' +
-      '</div>' +
+      '</summary>' +
+      '<div class="card-body">' +
       '<div class="card-grid">' +
         row1("Género / edad", (row["Género"] || "—") + " / " + (row["Categoría de edad"] || "—")) +
         row1("Academia / coach", (row["Academia o equipo"] || "—") + " / " + (row["Coach"] || "—")) +
@@ -292,6 +338,7 @@
       '<div class="card-footer">' +
         '<label class="notify-check"><input type="checkbox" class="notify-input" checked /> Avisar por correo al peleador</label>' +
         '<div class="card-actions"><button type="button" class="btn btn-primary btn-save">Guardar cambios</button><span class="save-note">Guardado ✓</span></div>' +
+      '</div>' +
       '</div>';
 
     var statusRow = card.querySelector('[data-role="status-row"]');

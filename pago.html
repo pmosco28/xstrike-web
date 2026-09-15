@@ -16,6 +16,13 @@
   }
   .pago-row { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 0.95rem; }
   .pago-row:last-child { border-bottom: none; }
+  .whatsapp-admin-link {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-top: 14px; padding: 12px 16px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--blue); text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .whatsapp-admin-link:hover { border-color: var(--blue); }
   .pago-row span:first-child { color: var(--muted); }
   .pago-row span:last-child { font-weight: 600; text-align: right; }
   .pago-amount { text-align: center; margin: 20px 0; }
@@ -53,6 +60,10 @@
     <div class="pago-row"><span>Tipo de cuenta</span><span id="p-tipo"></span></div>
     <div class="pago-row"><span>Número de cuenta</span><span id="p-numero"></span></div>
   </div>
+
+  <a id="whatsapp-admin-link" href="#" target="_blank" rel="noopener" class="whatsapp-admin-link" hidden>
+    <span aria-hidden="true">💬</span> ¿Dudas con el pago? Escríbenos por WhatsApp
+  </a>
 
   <div id="form-view">
     <div class="field" style="margin-top:28px;">
@@ -95,6 +106,13 @@
   document.getElementById("p-cedula").textContent = pago.cedula || "—";
   document.getElementById("p-tipo").textContent = pago.tipoCuenta || "—";
   document.getElementById("p-numero").textContent = pago.numeroCuenta || "—";
+
+  if (pago.whatsappAdmin) {
+    var waLink = document.getElementById("whatsapp-admin-link");
+    var numeroLimpio = pago.whatsappAdmin.replace(/[^\d]/g, "");
+    waLink.href = "https://wa.me/" + numeroLimpio + "?text=" + encodeURIComponent("Hola, tengo una duda sobre el pago de mi inscripción a X-Strike.");
+    waLink.hidden = false;
+  }
 
   var params = new URLSearchParams(location.search);
   var codigoInput = document.getElementById("codigo-input");

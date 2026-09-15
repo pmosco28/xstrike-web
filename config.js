@@ -44,6 +44,7 @@ window.SITE_CONFIG = {
     cedula: "0106643125",
     tipoCuenta: "Cuenta de ahorros",
     numeroCuenta: "406135135905",
+    whatsappAdmin: "+593992758210", // para dudas sobre el pago, en pago.html
   },
 
   // Categorías por edad — confirmadas por la organización (las mismas del
