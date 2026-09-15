@@ -54,6 +54,7 @@
   .pago-badge-reportado { background: rgba(47,139,255,0.15); color: var(--blue); }
   .pago-badge-confirmado { background: rgba(124,250,0,0.15); color: var(--green); }
   .pago-badge-noaplica { background: rgba(118,124,136,0.15); color: var(--muted); }
+  .pago-badge-rechazado { background: rgba(255,107,107,0.15); color: #ff6b6b; }
 
   .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; margin-bottom: 16px; font-size: 0.92rem; }
   @media (max-width: 640px) { .card-grid { grid-template-columns: 1fr; } }
@@ -154,10 +155,17 @@
     "Pendiente": "st-pendiente",
     "Aceptado": "st-aceptado", "Rechazado": "st-rechazado",
   };
-  var PAGO_ESTADOS = ["Pendiente", "Reportado", "Confirmado"];
+  var PAGO_ESTADOS = ["Pendiente", "Reportado", "Confirmado", "Rechazado"];
+  var PAGO_HEADER_LABEL = {
+    "Pendiente": "💳 Pago pendiente",
+    "Reportado": "🧾 Pago por revisar",
+    "Confirmado": "✅ Pago confirmado",
+    "Rechazado": "⚠️ Comprobante rechazado",
+  };
   var PAGO_BADGE_CLASS = {
     "Pendiente": "pago-badge-nopendiente", "Reportado": "pago-badge-reportado",
-    "Confirmado": "pago-badge-confirmado", "No aplica": "pago-badge-noaplica",
+    "Confirmado": "pago-badge-confirmado", "Rechazado": "pago-badge-rechazado",
+    "No aplica": "pago-badge-noaplica",
   };
 
   var allData = [];
@@ -314,8 +322,8 @@
       '<summary class="card-head">' +
         '<div><h3>' + escapeHtml(row["Nombre completo"]) + '</h3><span class="card-code">' + escapeHtml(row["Código"]) + " · " + (row["Disciplina principal"] || "—") + '</span></div>' +
         '<div class="card-head-badges">' +
-        '<span class="badge-estado pago-badge-reportado" data-role="pago-alerta" title="Subió comprobante de pago — falta confirmarlo"' +
-          (row["Pago"] === "Reportado" ? "" : " hidden") + '>🧾 Pago por revisar</span>' +
+        '<span class="badge-estado ' + (PAGO_BADGE_CLASS[row["Pago"]] || "pago-badge-nopendiente") + '" data-role="pago-alerta"' +
+          (estado === "Aceptado" ? "" : " hidden") + '>' + (PAGO_HEADER_LABEL[row["Pago"]] || PAGO_HEADER_LABEL["Pendiente"]) + '</span>' +
         '<span class="badge-estado estado-badge-main ' + badgeClass + '">' + escapeHtml(estado) + '</span>' +
         '</div>' +
       '</summary>' +
@@ -387,11 +395,18 @@
     }
 
     card.querySelector(".btn-save").addEventListener("click", function () {
+      var saveBtn = card.querySelector(".btn-save");
       var token = localStorage.getItem(TOKEN_KEY);
       // La categoría no se escribe a mano — siempre es la calculada a partir
       // de la fecha de nacimiento y el peso que envió el propio peleador.
       var categoria = categoriaCompleta(row);
       var notify = card.querySelector(".notify-input").checked;
+
+      // Guardar toma 2-3 segundos (Apps Script hace una doble redirección por
+      // dentro) — sin este aviso, el clic parece no haber hecho nada.
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Guardando...";
+
       apiPost({
         adminAction: "update",
         token: token,
@@ -401,6 +416,8 @@
         pago: pagoRow ? selectedPago : undefined,
         notify: notify,
       }).then(function (res) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Guardar cambios";
         if (res && res.ok) {
           row["Estado"] = selectedStatus;
           row["Categoría asignada"] = categoria;
@@ -417,12 +434,20 @@
             pagoBadge.textContent = selectedPago;
           }
           var pagoAlerta = card.querySelector('[data-role="pago-alerta"]');
-          if (pagoAlerta) pagoAlerta.hidden = selectedPago !== "Reportado";
+          if (pagoAlerta) {
+            pagoAlerta.hidden = selectedStatus !== "Aceptado";
+            pagoAlerta.className = "badge-estado " + (PAGO_BADGE_CLASS[selectedPago] || "pago-badge-nopendiente");
+            pagoAlerta.textContent = PAGO_HEADER_LABEL[selectedPago] || PAGO_HEADER_LABEL["Pendiente"];
+          }
           // Si acaba de pasar a Aceptado, el bloque de pago aún no existe en el DOM
           // hasta refrescar — se le avisa al usuario para que actualice la lista.
         } else {
           alert("No se pudo guardar. Intenta de nuevo.");
         }
+      }).catch(function () {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Guardar cambios";
+        alert("Error de conexión. Intenta de nuevo.");
       });
     });
 
