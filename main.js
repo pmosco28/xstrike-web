@@ -321,9 +321,10 @@
       if (!ok) valid = false;
     });
 
-    // Radio groups: genero, disponibilidad
+    // Radio groups: genero, nivel de experiencia, disponibilidad
     [
       { group: "genero-group", name: "genero", errorId: "genero-error" },
+      { group: "nivel-experiencia-group", name: "nivelExperiencia", errorId: "nivelExperiencia-error" },
       { group: "disponibilidad-group", name: "disponibilidad", errorId: "disponibilidad-error" },
     ].forEach(function (cfg) {
       var radioGroup = stepEl.querySelector("#" + cfg.group);
@@ -409,6 +410,13 @@
     }
     if (categoriaPesoActual) {
       payload.categoriaPeso = categoriaPesoActual;
+    }
+
+    // Combina nivel de experiencia (cerrado) + el detalle opcional en un solo
+    // texto, para seguir usando la misma columna "Experiencia competitiva".
+    if (payload.nivelExperiencia) {
+      payload.experiencia = payload.nivelExperiencia + (payload.experiencia ? " — " + payload.experiencia : "");
+      delete payload.nivelExperiencia;
     }
 
     payload.origen = "landing-x-strike";

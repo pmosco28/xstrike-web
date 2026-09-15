@@ -64,6 +64,10 @@
 
   .card .field { margin-bottom: 12px; }
   .card .field label { font-size: 0.8rem; }
+  .preview-mensaje {
+    font-size: 0.85rem; color: var(--muted); font-style: italic;
+    margin: 4px 0 16px; padding-left: 2px;
+  }
   .card-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
   .notify-check { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--silver); }
   .notify-check input { accent-color: var(--green); }
@@ -128,6 +132,12 @@
     "Aceptado": "badge-aceptado", "Rechazado": "badge-rechazado",
   };
   var STATUSES = ["Pendiente", "En revisión", "Aceptado", "Rechazado"];
+  var MENSAJE_PREVIEW = {
+    "Pendiente": "No se envía ningún correo en este estado.",
+    "En revisión": "Correo pidiéndole al peleador información adicional para continuar el proceso.",
+    "Aceptado": "Correo confirmando la aceptación, con su categoría, los datos bancarios y el link para subir el comprobante de pago.",
+    "Rechazado": "Correo agradeciendo su postulación e informando que no continúa en el proceso.",
+  };
   var STATUS_CLASS = {
     "Pendiente": "st-pendiente", "En revisión": "st-revision",
     "Aceptado": "st-aceptado", "Rechazado": "st-rechazado",
@@ -277,17 +287,21 @@
         (row["WhatsApp"] ? '<a href="' + waLink(row) + '" target="_blank" rel="noopener">Escribir por WhatsApp</a>' : "") +
       '</div>' +
       '<div class="status-row" data-role="status-row"></div>' +
+      '<p class="preview-mensaje" data-role="preview-mensaje"></p>' +
       (estado === "Aceptado" ? buildPagoBlock(row) : "") +
-      '<div class="field"><label>Categoría (calculada automáticamente, no se edita a mano)</label>' +
-      '<input type="text" class="cat-input" value="' + escapeAttr(categoriaCompleta(row)) + '" readonly /></div>' +
-      '<div class="field"><label>Próximos pasos / mensaje al peleador</label><textarea class="pasos-input" rows="2">' + escapeHtml(row["Próximos pasos"] || "") + '</textarea></div>' +
       '<div class="card-footer">' +
         '<label class="notify-check"><input type="checkbox" class="notify-input" checked /> Avisar por correo al peleador</label>' +
         '<div class="card-actions"><button type="button" class="btn btn-primary btn-save">Guardar cambios</button><span class="save-note">Guardado ✓</span></div>' +
       '</div>';
 
     var statusRow = card.querySelector('[data-role="status-row"]');
+    var previewEl = card.querySelector('[data-role="preview-mensaje"]');
     var selectedStatus = estado;
+
+    function actualizarPreview() {
+      previewEl.textContent = MENSAJE_PREVIEW[selectedStatus] || "";
+    }
+
     STATUSES.forEach(function (s) {
       var btn = document.createElement("button");
       btn.type = "button";
@@ -297,9 +311,11 @@
         selectedStatus = s;
         statusRow.querySelectorAll(".status-btn").forEach(function (b) { b.classList.remove("active"); });
         btn.classList.add("active");
+        actualizarPreview();
       });
       statusRow.appendChild(btn);
     });
+    actualizarPreview();
 
     var selectedPago = row["Pago"] || "No aplica";
     var pagoRow = card.querySelector('[data-role="pago-row"]');
@@ -320,8 +336,9 @@
 
     card.querySelector(".btn-save").addEventListener("click", function () {
       var token = localStorage.getItem(TOKEN_KEY);
-      var categoria = card.querySelector(".cat-input").value;
-      var proximosPasos = card.querySelector(".pasos-input").value;
+      // La categoría no se escribe a mano — siempre es la calculada a partir
+      // de la fecha de nacimiento y el peso que envió el propio peleador.
+      var categoria = categoriaCompleta(row);
       var notify = card.querySelector(".notify-input").checked;
       apiPost({
         adminAction: "update",
@@ -329,14 +346,12 @@
         codigo: row["Código"],
         estado: selectedStatus,
         categoria: categoria,
-        proximosPasos: proximosPasos,
         pago: pagoRow ? selectedPago : undefined,
         notify: notify,
       }).then(function (res) {
         if (res && res.ok) {
           row["Estado"] = selectedStatus;
           row["Categoría asignada"] = categoria;
-          row["Próximos pasos"] = proximosPasos;
           if (pagoRow) row["Pago"] = selectedPago;
           var note = card.querySelector(".save-note");
           note.classList.add("show");

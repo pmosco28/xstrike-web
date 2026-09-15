@@ -313,9 +313,24 @@
           </div>
 
           <div class="field">
-            <label for="experiencia">Experiencia competitiva</label>
-            <textarea id="experiencia" name="experiencia" required placeholder="Indica si sería tu primera competencia."></textarea>
-            <span class="form-error">Cuéntanos tu experiencia competitiva.</span>
+            <label>Nivel de experiencia</label>
+            <div class="radio-group" id="nivel-experiencia-group">
+              <label class="radio-pill">
+                <input type="radio" name="nivelExperiencia" value="Debutante" required />Debutante
+              </label>
+              <label class="radio-pill">
+                <input type="radio" name="nivelExperiencia" value="Amateur" />Amateur
+              </label>
+              <label class="radio-pill">
+                <input type="radio" name="nivelExperiencia" value="Semi-profesional / Profesional" />Semi-pro / Pro
+              </label>
+            </div>
+            <span class="form-error" id="nivelExperiencia-error">Selecciona tu nivel de experiencia.</span>
+          </div>
+
+          <div class="field">
+            <label for="experiencia">Algo más que quieras contarnos <span class="opt">(opcional)</span></label>
+            <input type="text" id="experiencia" name="experiencia" placeholder="Ej. Campeón provincial 2023, o cualquier logro relevante" />
           </div>
 
           <div class="field">
