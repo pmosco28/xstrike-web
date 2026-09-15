@@ -156,6 +156,11 @@
     "Aceptado": "st-aceptado", "Rechazado": "st-rechazado",
   };
   var PAGO_ESTADOS = ["Pendiente", "Reportado", "Confirmado", "Rechazado"];
+  // Reutiliza los colores ya definidos para los botones de estado (st-*).
+  var PAGO_BTN_CLASS = {
+    "Pendiente": "st-pendiente", "Reportado": "st-revision",
+    "Confirmado": "st-aceptado", "Rechazado": "st-rechazado",
+  };
   var PAGO_HEADER_LABEL = {
     "Pendiente": "💳 Pago pendiente",
     "Reportado": "🧾 Pago por revisar",
@@ -383,7 +388,10 @@
       PAGO_ESTADOS.forEach(function (p) {
         var btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "status-btn " + (p === selectedPago ? "active" : "");
+        // Reutiliza los mismos colores que ya existen para los botones de
+        // estado — sin esto, el botón de pago no mostraba ningún cambio
+        // visual al hacer clic (parecía que el clic "no reaccionaba").
+        btn.className = "status-btn " + PAGO_BTN_CLASS[p] + (p === selectedPago ? " active" : "");
         btn.textContent = p;
         btn.addEventListener("click", function () {
           selectedPago = p;
