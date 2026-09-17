@@ -79,7 +79,7 @@
     },
     {
       q: "¿Qué disciplinas y categorías estarán habilitadas?",
-      a: "Respuesta pendiente de confirmación por parte de la organización.",
+      a: "Muay Thai y Kickboxing. Las categorías se asignan automáticamente según tu edad y peso al postular; la categoría definitiva se confirma en el pesaje oficial.",
     },
     {
       q: "¿Hasta cuándo puedo postular?",
@@ -95,7 +95,7 @@
     },
     {
       q: "¿Dónde se realizará X-Strike?",
-      a: "Venue pendiente de confirmación.",
+      a: "En el Sindicato de Choferes de Cuenca (Av. Fray Vicente Solano y Florencia Astudillo). Combates desde las 9:00 hasta las 15:00, y cartelera principal de 19:00 a 22:00.",
     },
   ];
 

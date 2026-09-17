@@ -11,8 +11,8 @@ window.SITE_CONFIG = {
   event: {
     fecha: "31 de octubre de 2026",
     ciudad: "Cuenca, Ecuador",
-    venue: null,          // ej: "Coliseo Jefferson Pérez" — null = pendiente
-    horario: null,        // ej: "18:00" — null = pendiente
+    venue: "Sindicato de Choferes de Cuenca – Av. Fray Vicente Solano y Florencia Astudillo",
+    horario: "Combates desde las 9:00 hasta las 15:00 · Cartelera principal de 19:00 a 22:00",
     deadline: null,       // ej: "15 de octubre de 2026, 23:59" — null = pendiente
   },
 
