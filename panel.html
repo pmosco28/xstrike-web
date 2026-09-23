@@ -88,6 +88,12 @@
   .card-actions { display: flex; gap: 10px; flex-wrap: wrap; }
   .save-note { font-size: 0.8rem; color: var(--green); margin-left: 10px; opacity: 0; transition: opacity 0.3s ease; }
   .save-note.show { opacity: 1; }
+  .btn-danger {
+    background: transparent; border: 1.5px solid rgba(255,107,107,0.4); color: #ff6b6b;
+    padding: 11px 20px; border-radius: 999px; font-family: var(--font-display);
+    letter-spacing: 0.03em; text-transform: uppercase; font-size: 0.85rem; cursor: pointer;
+  }
+  .btn-danger:hover { border-color: #ff6b6b; background: rgba(255,107,107,0.08); }
 
   .gate-shell { max-width: 420px; margin: 160px auto; text-align: center; }
   .gate-shell input { width: 100%; margin: 20px 0; padding: 14px 16px; background: var(--bg-card); border: 1px solid var(--line); border-radius: 10px; color: var(--text); }
@@ -355,7 +361,11 @@
       buildPagoBlock(row) +
       '<div class="card-footer">' +
         '<label class="notify-check"><input type="checkbox" class="notify-input" checked /> Avisar por correo al peleador</label>' +
-        '<div class="card-actions"><button type="button" class="btn btn-primary btn-save">Guardar cambios</button><span class="save-note">Guardado ✓</span></div>' +
+        '<div class="card-actions">' +
+          '<button type="button" class="btn-danger btn-delete">Eliminar postulación</button>' +
+          '<button type="button" class="btn btn-primary btn-save">Guardar cambios</button>' +
+          '<span class="save-note">Guardado ✓</span>' +
+        '</div>' +
       '</div>' +
       '</div>';
 
@@ -460,6 +470,34 @@
       }).catch(function () {
         saveBtn.disabled = false;
         saveBtn.textContent = "Guardar cambios";
+        alert("Error de conexión. Intenta de nuevo.");
+      });
+    });
+
+    card.querySelector(".btn-delete").addEventListener("click", function () {
+      var ok = confirm(
+        "¿Eliminar la postulación de " + row["Nombre completo"] + " (" + row["Código"] + ")?\n\n" +
+        "Esto la borra de la Sheet de forma permanente — úsalo para postulaciones de prueba o duplicadas."
+      );
+      if (!ok) return;
+
+      var delBtn = card.querySelector(".btn-delete");
+      delBtn.disabled = true;
+      delBtn.textContent = "Eliminando...";
+      var token = localStorage.getItem(TOKEN_KEY);
+
+      apiPost({ adminAction: "delete", token: token, codigo: row["Código"] }).then(function (res) {
+        if (res && res.ok) {
+          allData = allData.filter(function (r) { return r["Código"] !== row["Código"]; });
+          render();
+        } else {
+          delBtn.disabled = false;
+          delBtn.textContent = "Eliminar postulación";
+          alert("No se pudo eliminar. Intenta de nuevo.");
+        }
+      }).catch(function () {
+        delBtn.disabled = false;
+        delBtn.textContent = "Eliminar postulación";
         alert("Error de conexión. Intenta de nuevo.");
       });
     });
