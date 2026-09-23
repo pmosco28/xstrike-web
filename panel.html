@@ -327,8 +327,8 @@
       '<summary class="card-head">' +
         '<div><h3>' + escapeHtml(row["Nombre completo"]) + '</h3><span class="card-code">' + escapeHtml(row["Código"]) + " · " + (row["Disciplina principal"] || "—") + '</span></div>' +
         '<div class="card-head-badges">' +
-        '<span class="badge-estado ' + (PAGO_BADGE_CLASS[row["Pago"]] || "pago-badge-nopendiente") + '" data-role="pago-alerta"' +
-          (estado === "Aceptado" ? "" : " hidden") + '>' + (PAGO_HEADER_LABEL[row["Pago"]] || PAGO_HEADER_LABEL["Pendiente"]) + '</span>' +
+        '<span class="badge-estado ' + (PAGO_BADGE_CLASS[row["Pago"]] || "pago-badge-nopendiente") + '" data-role="pago-alerta">' +
+          (PAGO_HEADER_LABEL[row["Pago"]] || PAGO_HEADER_LABEL["Pendiente"]) + '</span>' +
         '<span class="badge-estado estado-badge-main ' + badgeClass + '">' + escapeHtml(estado) + '</span>' +
         '</div>' +
       '</summary>' +
@@ -352,7 +352,7 @@
       '</div>' +
       '<div class="status-row" data-role="status-row"></div>' +
       '<p class="preview-mensaje" data-role="preview-mensaje"></p>' +
-      (estado === "Aceptado" ? buildPagoBlock(row) : "") +
+      buildPagoBlock(row) +
       '<div class="card-footer">' +
         '<label class="notify-check"><input type="checkbox" class="notify-input" checked /> Avisar por correo al peleador</label>' +
         '<div class="card-actions"><button type="button" class="btn btn-primary btn-save">Guardar cambios</button><span class="save-note">Guardado ✓</span></div>' +
@@ -443,12 +443,9 @@
           }
           var pagoAlerta = card.querySelector('[data-role="pago-alerta"]');
           if (pagoAlerta) {
-            pagoAlerta.hidden = selectedStatus !== "Aceptado";
             pagoAlerta.className = "badge-estado " + (PAGO_BADGE_CLASS[selectedPago] || "pago-badge-nopendiente");
             pagoAlerta.textContent = PAGO_HEADER_LABEL[selectedPago] || PAGO_HEADER_LABEL["Pendiente"];
           }
-          // Si acaba de pasar a Aceptado, el bloque de pago aún no existe en el DOM
-          // hasta refrescar — se le avisa al usuario para que actualice la lista.
         } else {
           alert("No se pudo guardar. Intenta de nuevo.");
         }
