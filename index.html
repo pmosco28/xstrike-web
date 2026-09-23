@@ -421,7 +421,19 @@
           Te enviamos este código también a tu correo — guárdalo para consultar el estado de tu
           postulación en <a href="estado.html" style="color:var(--green);">esta página</a>.
         </p>
-        <p id="local-mode-note" class="pending" style="margin-top:18px; display:inline-block;" hidden>
+
+        <div class="payment-card" id="payment-card">
+          <p class="payment-card-title">Para asegurar tu cupo, transfiere tu inscripción:</p>
+          <div class="payment-amount" id="pc-monto"></div>
+          <div class="payment-row"><span>Banco / Cooperativa</span><span id="pc-banco"></span></div>
+          <div class="payment-row"><span>Titular</span><span id="pc-titular"></span></div>
+          <div class="payment-row"><span>Cédula</span><span id="pc-cedula"></span></div>
+          <div class="payment-row"><span>Tipo de cuenta</span><span id="pc-tipo"></span></div>
+          <div class="payment-row"><span>Número de cuenta</span><span id="pc-numero"></span></div>
+          <a id="pc-pago-link" href="pago.html" class="btn btn-primary btn-block" style="margin-top:18px;">Ya transferí, subir comprobante</a>
+        </div>
+
+        <p id="local-mode-note" class="pending" style="margin-top:18px;" hidden>
           Modo de prueba: esta postulación se guardó solo en este navegador (aún no hay
           backend conectado). Revísala en <a href="admin.html" style="color:inherit;">admin.html</a>.
         </p>

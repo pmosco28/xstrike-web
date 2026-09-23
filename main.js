@@ -385,6 +385,18 @@
   var codeEl = document.getElementById("form-code");
   var retryBtn = document.getElementById("form-retry");
 
+  function fillPaymentCard(code) {
+    var pago = CFG.pago || {};
+    document.getElementById("pc-monto").textContent = "$" + (pago.monto || "—") + " " + (pago.moneda || "");
+    document.getElementById("pc-banco").textContent = pago.banco || "—";
+    document.getElementById("pc-titular").textContent = pago.titular || "—";
+    document.getElementById("pc-cedula").textContent = pago.cedula || "—";
+    document.getElementById("pc-tipo").textContent = pago.tipoCuenta || "—";
+    document.getElementById("pc-numero").textContent = pago.numeroCuenta || "—";
+    var link = document.getElementById("pc-pago-link");
+    if (link) link.href = "pago.html?codigo=" + encodeURIComponent(code || "");
+  }
+
   function collectPayload() {
     var data = new FormData(form);
     var payload = {};
@@ -455,6 +467,7 @@
       setTimeout(function () {
         var code = window.XStrikeLocalStore.save(payload);
         codeEl.textContent = code;
+        fillPaymentCard(code);
         var note = document.getElementById("local-mode-note");
         if (note) note.hidden = false;
         setView("result");
@@ -474,6 +487,7 @@
       .then(function (data) {
         if (data && data.ok) {
           codeEl.textContent = data.code || "—";
+          fillPaymentCard(data.code);
           setView("result");
         } else {
           setView("error");

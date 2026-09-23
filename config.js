@@ -37,7 +37,7 @@ window.SITE_CONFIG = {
   // (ver pago.html). Tomado del formulario anterior del equipo — confirma que
   // sigan siendo correctos antes de publicar.
   pago: {
-    monto: 30,
+    monto: 20,
     moneda: "USD",
     banco: "Cooperativa JEP",
     titular: "Juan Alfredo Ordoñez Jaramillo",

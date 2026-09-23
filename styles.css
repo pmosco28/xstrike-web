@@ -497,6 +497,31 @@ section.alt { background: var(--bg-alt); }
 }
 .form-result p { max-width: 46ch; margin: 0 auto; }
 
+.payment-card {
+  text-align: left;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 24px clamp(18px, 5vw, 32px);
+  margin: 28px auto 0;
+  max-width: 420px;
+}
+.payment-card-title { font-weight: 600; margin-bottom: 4px; }
+.payment-amount {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  color: var(--green);
+  margin: 4px 0 14px;
+}
+.payment-row {
+  display: flex; justify-content: space-between; gap: 16px;
+  padding: 9px 0; border-bottom: 1px dashed var(--line);
+  font-size: 0.92rem;
+}
+.payment-row:last-of-type { border-bottom: none; }
+.payment-row span:first-child { color: var(--muted); }
+.payment-row span:last-child { font-weight: 600; text-align: right; }
+
 .form-submitting { text-align: center; padding: 40px 0; }
 .spinner {
   width: 36px; height: 36px;
