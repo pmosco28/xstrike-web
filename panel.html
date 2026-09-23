@@ -427,6 +427,14 @@
         saveBtn.disabled = false;
         saveBtn.textContent = "Guardar cambios";
         if (res && res.ok) {
+          // El backend puede forzar el estado a "Aceptado" (ej. al confirmar
+          // el pago), aunque el botón seleccionado en el panel siga siendo otro.
+          selectedStatus = res.estado || selectedStatus;
+          statusRow.querySelectorAll(".status-btn").forEach(function (b) {
+            b.classList.toggle("active", b.textContent === selectedStatus);
+          });
+          actualizarPreview();
+
           row["Estado"] = selectedStatus;
           row["Categoría asignada"] = categoria;
           if (pagoRow) row["Pago"] = selectedPago;
