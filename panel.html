@@ -340,7 +340,7 @@
       '</summary>' +
       '<div class="card-body">' +
       '<div class="card-grid">' +
-        row1("Género / edad", (row["Género"] || "—") + " / " + (row["Categoría de edad"] || "—")) +
+        row1("Género / edad", (row["Género"] || "—") + " / " + edadTexto(row)) +
         row1("Academia / coach", (row["Academia o equipo"] || "—") + " / " + (row["Coach"] || "—")) +
         row1("Disciplina", row["Disciplina principal"] || "—") +
         row1("Peso / categoría", (row["Peso (kg)"] || "—") + " kg / " + (row["Categoría de peso"] || "—")) +
@@ -521,6 +521,23 @@
         '<div class="status-row" data-role="pago-row"></div>' +
       '</div>'
     );
+  }
+
+  function calcularEdad(fechaStr) {
+    var nacimiento = new Date(String(fechaStr || "") + "T00:00:00");
+    if (isNaN(nacimiento.getTime())) return null;
+    var hoy = new Date();
+    var edad = hoy.getFullYear() - nacimiento.getFullYear();
+    var m = hoy.getMonth() - nacimiento.getMonth();
+    if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
+    return edad >= 0 ? edad : null;
+  }
+
+  function edadTexto(row) {
+    var edad = calcularEdad(row["Fecha de nacimiento"]);
+    var categoria = row["Categoría de edad"];
+    if (edad === null) return categoria || "—";
+    return edad + " años" + (categoria ? " (" + categoria + ")" : "");
   }
 
   function categoriaCompleta(row) {
