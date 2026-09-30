@@ -106,7 +106,10 @@
 <nav class="nav">
   <div class="container">
     <a href="index.html" style="text-decoration:none;"><img src="assets/img/logo-white.png" alt="X-Strike" class="logo-img" /></a>
-    <button type="button" class="btn btn-ghost" id="btn-logout" style="display:none;">Salir</button>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <a href="#" target="_blank" rel="noopener" class="btn btn-ghost" id="btn-raw-sheet" hidden>Ver datos crudos (Sheet)</a>
+      <button type="button" class="btn btn-ghost" id="btn-logout" style="display:none;">Salir</button>
+    </div>
   </div>
 </nav>
 
@@ -246,6 +249,11 @@
       gateShell.hidden = true;
       panelShell.hidden = false;
       document.getElementById("btn-logout").style.display = "inline-flex";
+      if (data.sheetUrl) {
+        var sheetBtn = document.getElementById("btn-raw-sheet");
+        sheetBtn.href = data.sheetUrl;
+        sheetBtn.hidden = false;
+      }
       allData = data.postulaciones;
       render();
       marcarActualizado();
